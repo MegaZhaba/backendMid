@@ -3,46 +3,46 @@ const jwt = require('jsonwebtoken');
 
 let wss = null;
 
-/**
- * Attach the raw ws.WebSocketServer to an existing http.Server.
- * Token is passed via Sec-WebSocket-Protocol header (browser limitation).
- */
 function initWS(httpServer) {
   wss = new WebSocket.Server({ server: httpServer });
+  console.log('✅ WebSocket server initialized');
 
   wss.on('connection', (ws, req) => {
-    // ── Auth via Sec-WebSocket-Protocol ──────────────────────────────────────
-    const protocols = req.headers['sec-websocket-protocol'];
-    const token = protocols ? protocols.split(',').map(s => s.trim())[0] : null;
+    // Parse URL для получения токена из query параметров
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
 
     if (!token) {
-      ws.close(4001, 'No token');
+      ws.close(4001, 'No token provided');
       return;
     }
 
     try {
-      ws.user = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      ws.user = decoded;
+      console.log(`🔌 WebSocket connected: ${decoded.username}`);
+      
+      ws.send(JSON.stringify({ type: 'CONNECTED', message: 'Connected to PEX WebSocket' }));
+    } catch (err) {
+      console.error('❌ WebSocket auth failed:', err.message);
       ws.close(4001, 'Invalid token');
       return;
     }
 
-    // Acknowledge the subprotocol so browsers don't reject the handshake
-    ws.on('error', (err) => console.error('WS error:', err.message));
-
-    console.log(`WS connected: ${ws.user.username}`);
+    ws.on('error', (err) => console.error('WebSocket error:', err.message));
+    ws.on('close', () => console.log('🔌 WebSocket disconnected'));
   });
 
   return wss;
 }
 
-
 function broadcastTickerUpdate(ticker, price) {
   if (!wss) return;
+  console.log(`📢 Broadcasting ${ticker}: $${price}`);
 
   const frame = JSON.stringify({
     type: 'TICKER_UPDATE',
-    payload: { ticker, price },
+    payload: { ticker, price, timestamp: Date.now() },
   });
 
   wss.clients.forEach((client) => {

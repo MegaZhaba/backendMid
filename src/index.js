@@ -1,42 +1,55 @@
-require('dotenv').config();
-const express   = require('express');
-const http      = require('http');
-const cors      = require('cors');
-const mongoose  = require('mongoose');
+require('dotenv').config(); // В САМОМ НАЧАЛЕ!
+
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const mongoose = require('mongoose');
 const { initWS } = require('./ws');
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
+// CORS для Vercel
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://your-frontend.vercel.app', // Замените на ваш URL после деплоя
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
 app.use(express.json());
 
-// ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api/auth',  require('./authRoutes'));
+// Routes
+app.use('/api/auth', require('./authRoutes'));
 app.use('/api/stocks', require('./stockRoutes'));
-app.use('/api/trade',  require('./tradeRoutes'));
+app.use('/api/trade', require('./tradeRoutes'));
 
 // Health check
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
-// ── HTTP + WebSocket Server ───────────────────────────────────────────────────
+// WebSocket
 const server = http.createServer(app);
 initWS(server);
 
-// ── MongoDB ───────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-
-mongoose
-  .connect(process.env.MONGO_URI)
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('MongoDB connected');
-    server.listen(PORT, () => console.log(`PEX server running on port ${PORT}`));
+    console.log('✅ MongoDB connected');
+    server.listen(PORT, () => console.log(`✅ PEX server running on port ${PORT}`));
   })
   .catch((err) => {
-    console.error('MongoDB connection error:', err.message);
+    console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
   });
