@@ -1,4 +1,4 @@
-require('dotenv').config(); // В САМОМ НАЧАЛЕ!
+require('dotenv').config();
 
 const express = require('express');
 const http = require('http');
@@ -9,25 +9,31 @@ const { initWS } = require('./ws');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS для Vercel
+// ✅ ИСПРАВЛЕННЫЕ НАСТРОЙКИ CORS
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'https://your-frontend.vercel.app', // Замените на ваш URL после деплоя
-  'http://localhost:5173'
+  'https://frontend-mid-773j.vercel.app',
+  'https://frontend-mid-773j.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: function(origin, callback) {
+    // Разрешаем запросы без origin (как от curl) и из разрешенных источников
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('Blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,  // ✅ ВАЖНО: разрешаем credentials
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Обработка preflight запросов
+app.options('*', cors());
 
 app.use(express.json());
 
