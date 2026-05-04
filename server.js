@@ -8,24 +8,29 @@ const connectDB = require("./config/db");
 
 dotenv.config();
 connectDB();
+
 const app = express();
 
 app.use(cors({
-  origin: [
-    "https://frontend-midterm-fullstack1.vercel.app",
-    "https://frontend-mid-773j-gimwzw0c2-megazhabas-projects.vercel.app",
-    /\.vercel\.app$/  // разрешает все vercel домены
-  ],
+  origin: function(origin, callback) {
+    if (!origin || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
 
 app.options("*", cors({
-  origin: [
-    "https://frontend-midterm-fullstack1.vercel.app",
-    "https://frontend-mid-773j-gimwzw0c2-megazhabas-projects.vercel.app",
-    /\.vercel\.app$/
-  ],
+  origin: function(origin, callback) {
+    if (!origin || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
