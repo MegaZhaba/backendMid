@@ -11,13 +11,21 @@ connectDB();
 const app = express();
 
 app.use(cors({
-  origin: "https://frontend-midterm-fullstack1.vercel.app",
+  origin: [
+    "https://frontend-midterm-fullstack1.vercel.app",
+    "https://frontend-mid-773j-gimwzw0c2-megazhabas-projects.vercel.app",
+    /\.vercel\.app$/  // разрешает все vercel домены
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
 
 app.options("*", cors({
-  origin: "https://frontend-midterm-fullstack1.vercel.app",
+  origin: [
+    "https://frontend-midterm-fullstack1.vercel.app",
+    "https://frontend-mid-773j-gimwzw0c2-megazhabas-projects.vercel.app",
+    /\.vercel\.app$/
+  ],
   credentials: true,
 }));
 
